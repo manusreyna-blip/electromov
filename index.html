@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ElectroMov — Movilidad Eléctrica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #080a0c;
+    --dark: #0e1215;
+    --panel: #131820;
+    --border: #1e2730;
+    --green: #00e5a0;
+    --green-dim: #00b07a;
+    --orange: #ff6a1a;
+    --white: #edf0f2;
+    --muted: #7a8898;
+    --charge: #00e5a0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CUSTOM CURSOR */
+  .cursor {
+    width: 12px; height: 12px;
+    background: var(--green);
+    border-radius: 50%;
+    position: fixed;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.08s ease, width 0.2s ease, height 0.2s ease, background 0.2s ease;
+    mix-blend-mode: screen;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid rgba(0,229,160,0.4);
+    border-radius: 50%;
+    position: fixed;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.18s ease;
+  }
+  body:has(a:hover) .cursor, body:has(button:hover) .cursor { width: 20px; height: 20px; background: var(--orange); }
+
+  /* GRAIN OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 500;
+    padding: 1.2rem 3rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid transparent;
+    transition: all 0.4s ease;
+    background: transparent;
+  }
+  nav.scrolled {
+    background: rgba(8,10,12,0.92);
+    border-bottom-color: var(--border);
+    backdrop-filter: blur(12px);
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.08em;
+    color: var(--white);
+    text-decoration: none;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .logo-bolt {
+    width: 22px; height: 28px;
+    display: inline-block;
+  }
+  .logo span { color: var(--green); }
+  .nav-links {
+    display: flex; gap: 2.5rem; list-style: none;
+  }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+    font-family: 'Space Mono', monospace;
+  }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta {
+    background: var(--green);
+    color: var(--black) !important;
+    padding: 0.55rem 1.4rem;
+    font-weight: 700 !important;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    transition: background 0.2s !important;
+  }
+  .nav-cta:hover { background: var(--orange) !important; color: var(--white) !important; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 8rem 3rem 4rem;
+    position: relative;
+    overflow: hidden;
+    gap: 2rem;
+  }
+
+  /* Animated grid background */
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridScroll 20s linear infinite;
+  }
+  @keyframes gridScroll {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(60px); }
+  }
+
+  /* Hero glow orb */
+  .hero::after {
+    content: '';
+    position: absolute;
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(0,229,160,0.08) 0%, transparent 65%);
+    right: -100px; top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .hero-left {
+    position: relative; z-index: 2;
+    animation: fadeUp 0.9s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(0,229,160,0.08);
+    border: 1px solid rgba(0,229,160,0.2);
+    padding: 0.35rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    color: var(--green);
+    margin-bottom: 1.8rem;
+    clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+  }
+  .hero-tag::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s ease infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.6); }
+  }
+
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 8vw, 7.5rem);
+    line-height: 0.92;
+    letter-spacing: 0.02em;
+    color: var(--white);
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 .line-accent { color: var(--green); display: block; }
+  .hero h1 .line-orange { color: var(--orange); }
+
+  .hero-sub {
+    font-size: 1.1rem;
+    color: var(--muted);
+    max-width: 440px;
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    font-weight: 300;
+  }
+  .hero-sub strong { color: var(--white); font-weight: 500; }
+
+  .hero-buttons {
+    display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+  }
+  .btn-primary {
+    background: var(--green);
+    color: var(--black);
+    padding: 0.9rem 2.2rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+  }
+  .btn-primary:hover { background: var(--orange); transform: translateY(-2px); }
+  .btn-secondary {
+    color: var(--white);
+    padding: 0.9rem 2rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+  }
+  .btn-secondary:hover { border-color: var(--green); color: var(--green); }
+
+  /* HERO VISUAL */
+  .hero-right {
+    position: relative; z-index: 2;
+    display: flex; justify-content: center; align-items: center;
+    animation: fadeUp 0.9s 0.2s ease both;
+  }
+
+  .charge-visual {
+    width: 420px; height: 420px;
+    position: relative;
+  }
+
+  /* Animated charge circle */
+  .charge-ring {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(0,229,160,0.15);
+  }
+  .charge-ring:nth-child(2) { inset: 20px; border-color: rgba(0,229,160,0.1); animation: spin 18s linear infinite; }
+  .charge-ring:nth-child(3) { inset: 40px; border-color: rgba(0,229,160,0.08); animation: spin 12s linear infinite reverse; }
+
+  .charge-ring::after {
+    content: '';
+    position: absolute;
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    top: -4px; left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 12px var(--green);
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .charge-center {
+    position: absolute;
+    inset: 70px;
+    background: var(--panel);
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    gap: 0.3rem;
+    box-shadow: 0 0 60px rgba(0,229,160,0.1), inset 0 0 40px rgba(0,229,160,0.03);
+  }
+
+  .charge-icon {
+    font-size: 3.5rem;
+    filter: drop-shadow(0 0 20px rgba(0,229,160,0.8));
+    animation: chargePulse 2s ease infinite;
+  }
+  @keyframes chargePulse {
+    0%,100% { filter: drop-shadow(0 0 20px rgba(0,229,160,0.8)); }
+    50% { filter: drop-shadow(0 0 40px rgba(0,229,160,1)) brightness(1.2); }
+  }
+
+  .charge-pct {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    color: var(--green);
+    letter-spacing: 0.1em;
+  }
+
+  /* Floating badges */
+  .badge {
+    position: absolute;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 0.7rem 1rem;
+    display: flex; align-items: center; gap: 0.6rem;
+    font-size: 0.72rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--white);
+    animation: float 4s ease infinite;
+    white-space: nowrap;
+  }
+  .badge:nth-child(4) { top: 20px; right: -20px; animation-delay: 0s; }
+  .badge:nth-child(5) { bottom: 60px; left: -30px; animation-delay: 1.5s; }
+  .badge:nth-child(6) { bottom: 20px; right: 10px; animation-delay: 0.8s; }
+
+  @keyframes float {
+    0%,100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  .badge-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .badge .badge-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .badge .badge-dot.orange { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+
+  /* TICKER */
+  .ticker {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 0.9rem 0;
+    overflow: hidden;
+    position: relative;
+    z-index: 10;
+  }
+  .ticker-track {
+    display: flex;
+    gap: 3rem;
+    animation: ticker 30s linear infinite;
+    width: max-content;
+  }
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .ticker-item {
+    display: flex; align-items: center; gap: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+    letter-spacing: 0.08em;
+  }
+  .ticker-item .sep { color: var(--green); }
+
+  /* STATS BAR */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat {
+    padding: 2.5rem 2rem;
+    border-right: 1px solid var(--border);
+    animation: fadeUp 0.7s ease both;
+  }
+  .stat:last-child { border-right: none; }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.02em;
+  }
+  .stat-num span { color: var(--orange); }
+  .stat-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* PRODUCTS */
+  .section {
+    padding: 6rem 3rem;
+  }
+  .section-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--green);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .section-tag::before {
+    content: '';
+    width: 30px; height: 1px;
+    background: var(--green);
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    line-height: 0.95;
+    margin-bottom: 1rem;
+    letter-spacing: 0.02em;
+  }
+  .section-sub {
+    color: var(--muted);
+    max-width: 480px;
+    line-height: 1.7;
+    font-size: 0.95rem;
+    margin-bottom: 3.5rem;
+  }
+
+  /* Product Grid */
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+  .product-card {
+    background: var(--dark);
+    padding: 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+    cursor: none;
+  }
+  .product-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,229,160,0.04) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .product-card:hover { background: var(--panel); }
+  .product-card:hover::before { opacity: 1; }
+
+  .product-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--green), transparent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+  .product-card:hover::after { transform: scaleX(1); }
+
+  .product-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--green);
+    letter-spacing: 0.15em;
+    margin-bottom: 1.5rem;
+    opacity: 0.7;
+  }
+  .product-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1.2rem;
+    display: block;
+    filter: grayscale(0.3);
+    transition: filter 0.3s, transform 0.3s;
+  }
+  .product-card:hover .product-icon { filter: none; transform: scale(1.15) rotate(-5deg); }
+
+  .product-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+    line-height: 1;
+  }
+  .product-desc {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+  .product-meta {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .product-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    color: var(--white);
+    letter-spacing: 0.04em;
+  }
+  .product-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    padding: 0.25rem 0.6rem;
+    background: rgba(0,229,160,0.1);
+    color: var(--green);
+    border: 1px solid rgba(0,229,160,0.2);
+    letter-spacing: 0.1em;
+  }
+  .product-badge.hot {
+    background: rgba(255,106,26,0.1);
+    color: var(--orange);
+    border-color: rgba(255,106,26,0.2);
+  }
+
+  /* FEATURED SECTION */
+  .featured {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    margin: 0 3rem;
+    border: 1px solid var(--border);
+  }
+  .featured-main {
+    background: var(--dark);
+    padding: 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .featured-main::before {
+    content: '⚡';
+    position: absolute;
+    font-size: 20rem;
+    right: -3rem; bottom: -3rem;
+    opacity: 0.025;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .featured-side {
+    display: flex; flex-direction: column;
+    gap: 1px;
+    background: var(--border);
+  }
+  .featured-block {
+    background: var(--dark);
+    padding: 2.5rem;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+  .featured-block:hover { background: var(--panel); }
+  .featured-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    line-height: 1;
+    margin-bottom: 0.8rem;
+    letter-spacing: 0.02em;
+  }
+  .featured-body {
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+  .featured-pill {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--green);
+    border: 1px solid rgba(0,229,160,0.25);
+    padding: 0.3rem 0.8rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* WHY SECTION */
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+    margin-top: 3rem;
+  }
+  .why-item {
+    padding: 2.5rem 2rem;
+    border-right: 1px solid var(--border);
+    position: relative;
+    transition: background 0.3s;
+  }
+  .why-item:last-child { border-right: none; }
+  .why-item:hover { background: var(--panel); }
+  .why-icon {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+  .why-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+    color: var(--white);
+  }
+  .why-body {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .why-num {
+    position: absolute;
+    top: 1.5rem; right: 1.5rem;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    color: rgba(0,229,160,0.06);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  /* MARKETPLACES */
+  .channels {
+    padding: 5rem 3rem;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .channels-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    margin-top: 3rem;
+  }
+  .channel-card {
+    background: var(--dark);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .channel-card:hover { background: var(--black); }
+  .channel-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.5rem;
+  }
+  .channel-sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.06em;
+    margin-bottom: 1.2rem;
+  }
+  .channel-metric {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--green);
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .channel-metric-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.1em;
+    margin-top: 0.2rem;
+  }
+  .channel-icon {
+    font-size: 2.2rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+  .channel-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    transform: scaleX(0);
+    transition: transform 0.4s;
+  }
+  .channel-card:hover::after { transform: scaleX(1); }
+
+  /* SOCIAL STRATEGY */
+  .social-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    margin-top: 3rem;
+  }
+  .social-card {
+    background: var(--dark);
+    padding: 3rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+  .social-card:hover { background: var(--panel); }
+  .social-platform {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+  }
+  .social-handle {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--green);
+    letter-spacing: 0.1em;
+    margin-bottom: 1.2rem;
+  }
+  .social-strategy {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .social-strategy li {
+    list-style: none;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; gap: 0.5rem;
+  }
+  .social-strategy li::before {
+    content: '→';
+    color: var(--green);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+  }
+  .social-strategy li:last-child { border-bottom: none; }
+
+  /* CTA */
+  .cta {
+    padding: 8rem 3rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta::before {
+    content: '';
+    position: absolute;
+    width: 800px; height: 400px;
+    background: radial-gradient(ellipse, rgba(0,229,160,0.08) 0%, transparent 65%);
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .cta h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 7vw, 6rem);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    margin-bottom: 1.2rem;
+    position: relative;
+  }
+  .cta h2 span { color: var(--green); }
+  .cta p {
+    color: var(--muted);
+    font-size: 1rem;
+    margin-bottom: 2.5rem;
+    font-weight: 300;
+    position: relative;
+  }
+  .cta-buttons {
+    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    position: relative;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 3rem;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--panel);
+  }
+  .footer-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.08em;
+    color: var(--white);
+  }
+  .footer-logo span { color: var(--green); }
+  .footer-copy {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+  .footer-links {
+    display: flex; gap: 1.5rem;
+  }
+  .footer-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--green); }
+
+  /* SCROLL ANIMATIONS */
+  .reveal {
+    opacity: 0;
+    transform: translateY(25px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* AVAILABILITY NOTICE */
+  .availability-bar {
+    background: linear-gradient(90deg, rgba(0,229,160,0.1), rgba(0,229,160,0.05), rgba(0,229,160,0.1));
+    border-top: 1px solid rgba(0,229,160,0.2);
+    border-bottom: 1px solid rgba(0,229,160,0.2);
+    padding: 0.7rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--green);
+    letter-spacing: 0.12em;
+  }
+  .avail-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s ease infinite;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; padding: 7rem 1.5rem 3rem; }
+    .hero-right { display: none; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stat { border-bottom: 1px solid var(--border); }
+    .products-grid { grid-template-columns: 1fr; }
+    .featured { grid-template-columns: 1fr; margin: 0 1.5rem; }
+    .why-grid { grid-template-columns: 1fr 1fr; }
+    .channels-grid { grid-template-columns: 1fr 1fr; }
+    .social-grid { grid-template-columns: 1fr; }
+    .section { padding: 4rem 1.5rem; }
+    .channels { padding: 4rem 1.5rem; }
+    footer { flex-direction: column; gap: 1rem; text-align: center; }
+    .availability-bar { padding: 0.7rem 1.5rem; font-size: 0.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a href="#" class="logo">
+    <svg class="logo-bolt" viewBox="0 0 22 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M13 2L2 16H11L9 26L20 12H11L13 2Z" fill="#00e5a0" stroke="#00e5a0" stroke-width="1" stroke-linejoin="round"/>
+    </svg>
+    ELECTRO<span>MOV</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#productos">Productos</a></li>
+    <li><a href="#canales">Dónde Comprar</a></li>
+    <li><a href="#nosotros">Nosotros</a></li>
+    <li><a href="#contacto" class="nav-cta">Contacto →</a></li>
+  </ul>
+</nav>
+
+<!-- AVAILABILITY BAR -->
+<div class="availability-bar" style="margin-top:60px;">
+  <span class="avail-dot"></span>
+  STOCK DISPONIBLE · ENVÍOS A TODO EL PAÍS · CARGADORES CERTIFICADOS CE · ASESORAMIENTO TÉCNICO GRATUITO
+  <span class="avail-dot"></span>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+
+  <div class="hero-left">
+    <div class="hero-tag">⚡ MOVILIDAD ELÉCTRICA ARGENTINA</div>
+    <h1>
+      CARGÁ<br>
+      <span class="line-accent">TU FUTURO</span>
+      <span class="line-orange">HOY.</span>
+    </h1>
+    <p class="hero-sub">
+      Todo lo que necesitás para <strong>cargar, proteger y maximizar</strong> tu vehículo eléctrico. Cables, wallboxes, adaptadores y accesorios de alta calidad. Envío a todo Argentina.
+    </p>
+    <div class="hero-buttons">
+      <a href="#productos" class="btn-primary">⚡ Ver Productos</a>
+      <a href="#canales" class="btn-secondary">🛒 Mercado Libre →</a>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="charge-visual">
+      <div class="charge-ring"></div>
+      <div class="charge-ring"></div>
+      <div class="charge-ring"></div>
+      <div class="charge-center">
+        <span class="charge-icon">⚡</span>
+        <span class="charge-pct">100% CARGADO</span>
+      </div>
+      <div class="badge">
+        <span class="badge-dot green"></span>
+        TIPO 2 · CCS2
+      </div>
+      <div class="badge">
+        <span class="badge-dot orange"></span>
+        ENVÍO EN 24HS
+      </div>
+      <div class="badge">
+        <span class="badge-dot green"></span>
+        CERT. CE
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="ticker-item"><span class="sep">▶</span> CABLE TIPO 2 · 32A</span>
+    <span class="ticker-item"><span class="sep">▶</span> ADAPTADOR SCHUKO</span>
+    <span class="ticker-item"><span class="sep">▶</span> EVSE PORTÁTIL 3.5KW</span>
+    <span class="ticker-item"><span class="sep">▶</span> CANDADOS CON ALARMA</span>
+    <span class="ticker-item"><span class="sep">▶</span> CARGADORES 72V / 60V</span>
+    <span class="ticker-item"><span class="sep">▶</span> KITS DE VIAJE EV</span>
+    <span class="ticker-item"><span class="sep">▶</span> ENVÍOS A TODO ARGENTINA</span>
+    <span class="ticker-item"><span class="sep">▶</span> CABLE TIPO 2 · 32A</span>
+    <span class="ticker-item"><span class="sep">▶</span> ADAPTADOR SCHUKO</span>
+    <span class="ticker-item"><span class="sep">▶</span> EVSE PORTÁTIL 3.5KW</span>
+    <span class="ticker-item"><span class="sep">▶</span> CANDADOS CON ALARMA</span>
+    <span class="ticker-item"><span class="sep">▶</span> CARGADORES 72V / 60V</span>
+    <span class="ticker-item"><span class="sep">▶</span> KITS DE VIAJE EV</span>
+    <span class="ticker-item"><span class="sep">▶</span> ENVÍOS A TODO ARGENTINA</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat reveal">
+    <div class="stat-num">130<span>%</span></div>
+    <div class="stat-label">Crecimiento EV 2025</div>
+  </div>
+  <div class="stat reveal reveal-delay-1">
+    <div class="stat-num">26<span>K+</span></div>
+    <div class="stat-label">Vehículos electrificados vendidos</div>
+  </div>
+  <div class="stat reveal reveal-delay-2">
+    <div class="stat-num">50<span>K</span></div>
+    <div class="stat-label">Cupo anual habilitado por el gobierno</div>
+  </div>
+  <div class="stat reveal reveal-delay-3">
+    <div class="stat-num">0<span>%</span></div>
+    <div class="stat-label">Arancel de importación vigente</div>
+  </div>
+</div>
+
+<!-- PRODUCTS -->
+<section class="section" id="productos">
+  <div class="section-tag">CATÁLOGO PRINCIPAL</div>
+  <h2 class="section-title">LOS PRODUCTOS<br>QUE MUEVEN EL MERCADO</h2>
+  <p class="section-sub">Selección curada de los accesorios de mayor rotación para el mercado argentino. Compatibles con BYD, Renault, Chevrolet Spark, Volvo y toda la flota eléctrica nacional.</p>
+
+  <div class="products-grid">
+    <div class="product-card reveal">
+      <div class="product-num">01 / CABLE DE CARGA</div>
+      <span class="product-icon">🔌</span>
+      <div class="product-name">CABLE TIPO 2<br>MODE 3</div>
+      <p class="product-desc">Estándar europeo para todos los autos eléctricos. 32A / 7kW, 5 metros, certificación IEC 62196. Compatible con todos los modelos disponibles en Argentina.</p>
+      <div class="product-meta">
+        <div class="product-price">DESDE $95 USD</div>
+        <span class="product-badge">MÁS VENDIDO</span>
+      </div>
+    </div>
+
+    <div class="product-card reveal reveal-delay-1">
+      <div class="product-num">02 / ADAPTADOR</div>
+      <span class="product-icon">🔗</span>
+      <div class="product-name">ADAPTADOR<br>TYPE 2 → SCHUKO</div>
+      <p class="product-desc">Cargá desde cualquier enchufe doméstico. Indispensable mientras esperás la instalación de tu wallbox. Certificado CE, protección IP44.</p>
+      <div class="product-meta">
+        <div class="product-price">DESDE $65 USD</div>
+        <span class="product-badge hot">ALTA ROTACIÓN</span>
+      </div>
+    </div>
+
+    <div class="product-card reveal reveal-delay-2">
+      <div class="product-num">03 / CARGADOR PORTÁTIL</div>
+      <span class="product-icon">🔋</span>
+      <div class="product-name">EVSE PORTÁTIL<br>3.5KW</div>
+      <p class="product-desc">Cargador inteligente portátil con ajuste de intensidad 8A–16A. Pantalla LED, cable 5m, enchufe industrial. Listo para usar en casa o trabajo.</p>
+      <div class="product-meta">
+        <div class="product-price">DESDE $200 USD</div>
+        <span class="product-badge">RECOMENDADO</span>
+      </div>
+    </div>
+
+    <div class="product-card reveal">
+      <div class="product-num">04 / SEGURIDAD</div>
+      <span class="product-icon">🔒</span>
+      <div class="product-name">CANDADO DISCO<br>+ ALARMA 120dB</div>
+      <p class="product-desc">Protección esencial para e-bike, scooter y moto eléctrica. Alarma de 120dB ante movimiento, acero templado. Ideal para delivery y uso urbano.</p>
+      <div class="product-meta">
+        <div class="product-price">DESDE $45 USD</div>
+        <span class="product-badge hot">REGALO IDEAL</span>
+      </div>
+    </div>
+
+    <div class="product-card reveal reveal-delay-1">
+      <div class="product-num">05 / REPUESTO</div>
+      <span class="product-icon">⚡</span>
+      <div class="product-name">CARGADOR<br>72V / 60V / 48V</div>
+      <p class="product-desc">Repuesto o upgrade para motos y scooters eléctricos. Disponible en múltiples voltajes. Alta eficiencia, protección de sobrecarga y temperatura.</p>
+      <div class="product-meta">
+        <div class="product-price">DESDE $100 USD</div>
+        <span class="product-badge">DELIVERY PRO</span>
+      </div>
+    </div>
+
+    <div class="product-card reveal reveal-delay-2">
+      <div class="product-num">06 / KIT COMPLETO</div>
+      <span class="product-icon">🎒</span>
+      <div class="product-name">KIT DE VIAJE<br>ELECTROMOV</div>
+      <p class="product-desc">Cable Tipo 2 + Adaptador Schuko + Guantes aislantes en bolsa exclusiva ElectroMov. El regalo perfecto para el nuevo propietario de EV.</p>
+      <div class="product-meta">
+        <div class="product-price">DESDE $185 USD</div>
+        <span class="product-badge">KIT PREMIUM</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED -->
+<div class="featured" id="nosotros">
+  <div class="featured-main reveal">
+    <div class="section-tag">POR QUÉ ELECTROMOV</div>
+    <div class="featured-title">EL MERCADO<br>ELÉCTRICO<br>ARGENTINO<br>CRECIÓ 88%<br>EN 2025.</div>
+    <p class="featured-body">
+      Más autos, más motos, más scooters. Y cada uno de ellos necesita cargadores, cables y accesorios. ElectroMov nació para cubrir esa demanda con productos certificados, precios honestos y el mejor asesoramiento técnico del país.
+    </p>
+    <span class="featured-pill">⚡ SOMOS EL PRIMER ESPECIALISTA 100% EV DE ARGENTINA</span>
+  </div>
+  <div class="featured-side">
+    <div class="featured-block reveal">
+      <div class="section-tag">CALIDAD</div>
+      <div class="featured-title">CERTIF.<br>CE + IEC</div>
+      <p class="featured-body" style="font-size:0.8rem;">Todos nuestros productos tienen certificación europea CE e IEC 62196. No vendemos genéricos sin respaldo.</p>
+    </div>
+    <div class="featured-block reveal reveal-delay-1">
+      <div class="section-tag">SOPORTE</div>
+      <div class="featured-title">ASESOR.<br>TÉCNICO</div>
+      <p class="featured-body" style="font-size:0.8rem;">Te ayudamos a elegir el cargador correcto para tu vehículo, tu instalación eléctrica y tu presupuesto.</p>
+    </div>
+  </div>
+</div>
+
+<!-- WHY -->
+<section class="section">
+  <div class="section-tag">NUESTRAS VENTAJAS</div>
+  <h2 class="section-title">4 RAZONES PARA<br>ELEGIR ELECTROMOV</h2>
+  <div class="why-grid">
+    <div class="why-item reveal">
+      <div class="why-num">01</div>
+      <span class="why-icon">🚀</span>
+      <div class="why-title">ENVÍO EXPRESS</div>
+      <p class="why-body">Despacho en 24hs desde Buenos Aires. Enviamos a todo el país con seguimiento en tiempo real.</p>
+    </div>
+    <div class="why-item reveal reveal-delay-1">
+      <div class="why-num">02</div>
+      <span class="why-icon">✅</span>
+      <div class="why-title">STOCK GARANTIZADO</div>
+      <p class="why-body">Importación directa. Sin intermediarios. Siempre tenemos los productos más demandados disponibles.</p>
+    </div>
+    <div class="why-item reveal reveal-delay-2">
+      <div class="why-num">03</div>
+      <span class="why-icon">🛡️</span>
+      <div class="why-title">GARANTÍA REAL</div>
+      <p class="why-body">12 meses de garantía en todos los productos. Soporte post-venta en español, sin vueltas.</p>
+    </div>
+    <div class="why-item reveal reveal-delay-3">
+      <div class="why-num">04</div>
+      <span class="why-icon">💰</span>
+      <div class="why-title">MEJOR PRECIO</div>
+      <p class="why-body">Importación directa desde origen. Precios hasta 40% más bajos que distribuidores tradicionales.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CHANNELS -->
+<section class="channels" id="canales">
+  <div class="section-tag">DÓNDE COMPRARNOS</div>
+  <h2 class="section-title">ENCONTRANOS<br>EN TODOS LOS CANALES</h2>
+  <p class="section-sub">Vendemos en los marketplaces más importantes, en nuestro local a la calle y por nuestra tienda online. Pagás como querás.</p>
+
+  <div class="channels-grid">
+    <div class="channel-card reveal">
+      <span class="channel-icon">🛒</span>
+      <div class="channel-name">MERCADO LIBRE</div>
+      <div class="channel-sub">TIENDA OFICIAL</div>
+      <div class="channel-metric">5★</div>
+      <div class="channel-metric-label">REPUTACIÓN PLATINUM</div>
+    </div>
+    <div class="channel-card reveal reveal-delay-1">
+      <span class="channel-icon">🌐</span>
+      <div class="channel-name">ELECTROMOV.COM.AR</div>
+      <div class="channel-sub">TIENDA ONLINE PROPIA</div>
+      <div class="channel-metric">24/7</div>
+      <div class="channel-metric-label">DISPONIBLE SIEMPRE</div>
+    </div>
+    <div class="channel-card reveal reveal-delay-2">
+      <span class="channel-icon">🏪</span>
+      <div class="channel-name">LOCAL A LA CALLE</div>
+      <div class="channel-sub">BERAZATEGUI, GBA</div>
+      <div class="channel-metric">L–S</div>
+      <div class="channel-metric-label">LUNES A SÁBADO</div>
+    </div>
+    <div class="channel-card reveal reveal-delay-3">
+      <span class="channel-icon">📦</span>
+      <div class="channel-name">TIENDA NUBE</div>
+      <div class="channel-sub">E-COMMERCE INTEGRADO</div>
+      <div class="channel-metric">CUOTAS</div>
+      <div class="channel-metric-label">HASTA 12 CUOTAS S/I</div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL STRATEGY -->
+<section class="section">
+  <div class="section-tag">ESTRATEGIA DIGITAL</div>
+  <h2 class="section-title">PRESENCIA EN<br>REDES SOCIALES</h2>
+  <p class="section-sub">Contenido educativo, demostraciones de producto y comunidad EV. Así es como vamos a dominar el espacio digital.</p>
+
+  <div class="social-grid">
+    <div class="social-card reveal">
+      <div class="social-platform">INSTAGRAM</div>
+      <div class="social-handle">@ELECTROMOV.AR</div>
+      <ul class="social-strategy">
+        <li>Reels de instalación y demos de producto</li>
+        <li>Stories: "¿Tenés auto eléctrico? ¿Ya instalaste tu cargador?"</li>
+        <li>Comparativas: carga domiciliaria vs pública</li>
+        <li>UGC de clientes mostrando sus instalaciones</li>
+        <li>Colaboraciones con influencers EV argentinos</li>
+      </ul>
+    </div>
+    <div class="social-card reveal reveal-delay-1">
+      <div class="social-platform">TIKTOK</div>
+      <div class="social-handle">@ELECTROMOV</div>
+      <ul class="social-strategy">
+        <li>"El truco del adaptador Schuko que todo EV owner necesita"</li>
+        <li>Unboxing de productos con tests en tiempo real</li>
+        <li>Comparar costo carga eléctrica vs nafta (datos reales)</li>
+        <li>Tutoriales: "Cómo elegir tu primer cargador"</li>
+        <li>Respuestas a comentarios = contenido nativo</li>
+      </ul>
+    </div>
+    <div class="social-card reveal">
+      <div class="social-platform">YOUTUBE</div>
+      <div class="social-handle">ELECTROMOV ARGENTINA</div>
+      <ul class="social-strategy">
+        <li>Guías de instalación por modelo de auto</li>
+        <li>Review de cargadores: cuáles compramos y por qué</li>
+        <li>Serie: "Todo lo que nadie te dice del EV en Argentina"</li>
+        <li>SEO orgánico de largo plazo con búsquedas técnicas</li>
+        <li>Webinars mensuales sobre movilidad eléctrica</li>
+      </ul>
+    </div>
+    <div class="social-card reveal reveal-delay-1">
+      <div class="social-platform">MERCADO LIBRE</div>
+      <div class="social-handle">TIENDA ELECTROMOV</div>
+      <ul class="social-strategy">
+        <li>Fichas técnicas completas con fotos profesionales</li>
+        <li>Preguntas respondidas en menos de 1 hora</li>
+        <li>Promociones en fechas clave: Hot Sale, Cyber Monday</li>
+        <li>Combos: cable + adaptador con descuento</li>
+        <li>Reputación Platinum como prioridad desde el día 1</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="contacto">
+  <h2 class="reveal">LISTO PARA<br><span>ENCENDER</span><br>TU NEGOCIO?</h2>
+  <p class="reveal reveal-delay-1">Registrá el dominio electromov.com.ar hoy mismo y empezá a vender en el mercado EV más explosivo de Argentina.</p>
+  <div class="cta-buttons">
+    <a href="https://nic.ar" target="_blank" class="btn-primary">⚡ Registrar Dominio en NIC.AR</a>
+    <a href="https://www.mercadolibre.com.ar" target="_blank" class="btn-secondary">🛒 Abrir Tienda en ML →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">ELECTRO<span>MOV</span></div>
+  <div class="footer-copy">© 2026 ELECTROMOV · electromov.com.ar · MADE IN ARGENTINA</div>
+  <div class="footer-links">
+    <a href="#">Instagram</a>
+    <a href="#">TikTok</a>
+    <a href="#">YouTube</a>
+    <a href="#">MercadoLibre</a>
+  </div>
+</footer>
+
+<script>
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cursor.style.left = mx+'px'; cursor.style.top = my+'px'; });
+  function animRing() { rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12; ring.style.left = rx+'px'; ring.style.top = ry+'px'; requestAnimationFrame(animRing); }
+  animRing();
+
+  // NAV SCROLL
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // REVEAL ON SCROLL
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => obs.observe(el));
+
+  // STAT COUNTER ANIMATION
+  function animateCounter(el, target, suffix='') {
+    let start = 0, duration = 1800;
+    let startTime = null;
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      let progress = Math.min((timestamp - startTime) / duration, 1);
+      let val = Math.floor(progress * target);
+      el.querySelector('.num-val').textContent = val + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+</script>
+</body>
+</html>
